@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Counter</title>
+
+<style>
+  :root{
+    --bg: #0f1115;
+    --text: #e8e8e8;
+    --muted: #9aa4b2;
+    --btn: #1b1f27;
+    --btn-hover: #252b36;
+    --accent: #7c5cff;
+  }
+
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#ffffff;
+      --text:#111318;
+      --muted:#5b6472;
+      --btn:#f2f4f8;
+      --btn-hover:#e7ebf2;
+      --accent:#5a3dff;
+    }
+  }
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    display:flex;
+    justify-content:flex-start;
+    align-items:flex-start;
+    height:100vh;
+  }
+
+  .wrap{
+    padding:24px;
+  }
+
+  .counter{
+    font-size:96px;
+    font-weight:700;
+    letter-spacing:-2px;
+    line-height:1;
+    margin-bottom:8px;
+    user-select:none;
+  }
+
+  .buttons{
+    display:flex;
+    gap:10px;
+  }
+
+  button{
+    width:64px;
+    height:64px;
+    border-radius:14px;
+    border:1px solid transparent;
+    background:var(--btn);
+    color:var(--text);
+    font-size:28px;
+    font-weight:600;
+    cursor:pointer;
+    transition:transform .12s ease, background .2s ease, opacity .2s ease;
+    position:relative;
+    overflow:hidden;
+  }
+
+  button:hover{
+    background:var(--btn-hover);
+  }
+
+  button:active{
+    transform:scale(0.96);
+  }
+
+  .hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+
+  canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    pointer-events:none;
+  }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div id="counter" class="counter">0</div>
+
+  <div class="buttons">
+    <button id="minus">−</button>
+    <button id="plus">+</button>
+  </div>
+
+  <div class="hint"></div>
+</div>
+
+<canvas id="fx"></canvas>
+
+<script>
+let value = 0;
+const counter = document.getElementById("counter");
+const plusBtn = document.getElementById("plus");
+const minusBtn = document.getElementById("minus");
+const canvas = document.getElementById("fx");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+/* -------- CONFETTI -------- */
+let particles = [];
+
+function confetti(x,y){
+  for(let i=0;i<80;i++){
+    particles.push({
+      x, y,
+      vx:(Math.random()-0.5)*6,
+      vy:(Math.random()-1.5)*6,
+      g:0.12,
+      a:1,
+      r:Math.random()*3+2,
+      c: `hsl(${Math.random()*360},80%,60%)`
+    });
+  }
+}
+
+/* -------- EXPLOSION -------- */
+function explode(x,y){
+  for(let i=0;i<40;i++){
+    particles.push({
+      x,y,
+      vx:(Math.random()-0.5)*8,
+      vy:(Math.random()-0.5)*8,
+      g:0.15,
+      a:1,
+      r:Math.random()*2+1,
+      c: "rgba(255,255,255,0.8)",
+      fade:true
+    });
+  }
+}
+
+/* -------- LOOP -------- */
+function loop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  particles.forEach(p=>{
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += p.g;
+    if(p.fade) p.a -= 0.03;
+
+    ctx.globalAlpha = Math.max(p.a,0);
+    ctx.fillStyle = p.c;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  particles = particles.filter(p=>p.a>0);
+
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* -------- BUTTONS -------- */
+const MAX = 5;
+
+plusBtn.onclick = (e) => {
+  if (value >= MAX) return;
+
+  value++;
+  counter.textContent = value;
+
+  const r = e.target.getBoundingClientRect();
+  confetti(r.left + r.width/2, r.top + r.height/2);
+
+  if (value === MAX) {
+    plusBtn.style.opacity = "0.4";
+    plusBtn.style.pointerEvents = "none";
+  }
+};
+
+minusBtn.onclick = (e) => {
+  if (value <= 0) return;
+
+  value--;
+  counter.textContent = value;
+
+  const r = e.target.getBoundingClientRect();
+  explode(r.left + r.width/2, r.top + r.height/2);
+
+  if (value < MAX) {
+    plusBtn.style.opacity = "1";
+    plusBtn.style.pointerEvents = "auto";
+  }
+
+  const btn = e.target;
+  btn.style.visibility = "hidden";
+
+  setTimeout(() => {
+    btn.style.visibility = "visible";
+  }, 1800);
+};
+</script>
+</body>
+</html>
